@@ -371,7 +371,7 @@ def _create_tf_record_from_coco_annotations(image_info_file,
                                                   caption_annotations_file,
                                                   include_masks)
   else:
-    _create_tf_record_from_coco_annotations_subset(train_images,
+    _create_tf_record_from_coco_annotations_subset(images,
                                                   image_dir,
                                                   output_path,
                                                   num_shards,
