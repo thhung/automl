@@ -257,7 +257,7 @@ def _load_images_info(image_info_file):
   return info_dict['images']
 
 
-def _create_tf_record_from_coco_annotations(image_info_file,
+def _create_tf_record_from_coco_annotations_subset(images,
                                             image_dir,
                                             output_path,
                                             num_shards,
@@ -287,7 +287,8 @@ def _create_tf_record_from_coco_annotations(image_info_file,
       tf.io.TFRecordWriter(output_path + '-%05d-of-%05d.tfrecord' %
                            (i, num_shards)) for i in range(num_shards)
   ]
-  images = _load_images_info(image_info_file)
+
+  
 
   img_to_obj_annotation = None
   img_to_caption_annotation = None
@@ -334,6 +335,38 @@ def _create_tf_record_from_coco_annotations(image_info_file,
   logging.info('Finished writing, skipped %d annotations.',
                total_num_annotations_skipped)
 
+
+def _create_tf_record_from_coco_annotations(image_info_file,
+                                            image_dir,
+                                            output_path,
+                                            num_shards,
+                                            object_annotations_file=None,
+                                            caption_annotations_file=None,
+                                            include_masks=False):
+  images = _load_images_info(image_info_file)
+  nb_samples = len(images)
+  split_ratio = 0.2
+  nb_val_samples =  int(split_ratio * nb_samples)
+  from random import shuffle
+  shuffle(images)
+  val_images = images[:nb_val_samples]
+  _create_tf_record_from_coco_annotations_subset(val_images,
+                                            image_dir,
+                                                output_path +'_val',
+                                                num_shards,
+                                                object_annotations_file,
+                                                caption_annotations_file,
+                                                include_masks)
+
+  train_images = images[nb_val_samples:]
+  _create_tf_record_from_coco_annotations_subset(train_images,
+                                            image_dir,
+                                                output_path +'_train',
+                                                num_shards,
+                                                object_annotations_file,
+                                                caption_annotations_file,
+                                                include_masks)
+                                                  
 
 def main(_):
   assert FLAGS.image_dir, '`image_dir` missing.'
