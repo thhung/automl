@@ -60,6 +60,7 @@ flags.DEFINE_string('caption_annotations_file', '', 'File containing image '
 flags.DEFINE_string('output_file_prefix', '/tmp/train', 'Path to output file')
 flags.DEFINE_integer('num_shards', 32, 'Number of shards for output file.')
 flags.DEFINE_integer('num_threads', None, 'Number of threads to run.')
+flags.DEFINE_boolean('split', False, 'whether we split into train/val')
 FLAGS = flags.FLAGS
 
 
@@ -342,31 +343,41 @@ def _create_tf_record_from_coco_annotations(image_info_file,
                                             num_shards,
                                             object_annotations_file=None,
                                             caption_annotations_file=None,
-                                            include_masks=False):
+                                            include_masks=False, split = False):
   images = _load_images_info(image_info_file)
-  nb_samples = len(images)
-  split_ratio = 0.2
-  nb_val_samples =  int(split_ratio * nb_samples)
-  from random import shuffle
-  shuffle(images)
-  val_images = images[:nb_val_samples]
-  _create_tf_record_from_coco_annotations_subset(val_images,
-                                            image_dir,
-                                                output_path +'_val',
-                                                num_shards,
-                                                object_annotations_file,
-                                                caption_annotations_file,
-                                                include_masks)
 
-  train_images = images[nb_val_samples:]
-  _create_tf_record_from_coco_annotations_subset(train_images,
-                                            image_dir,
-                                                output_path +'_train',
-                                                num_shards,
-                                                object_annotations_file,
-                                                caption_annotations_file,
-                                                include_masks)
-                                                  
+  if split:
+    
+    nb_samples = len(images)
+    split_ratio = 0.2
+    nb_val_samples =  int(split_ratio * nb_samples)
+    from random import shuffle
+    shuffle(images)
+    val_images = images[:nb_val_samples]
+    _create_tf_record_from_coco_annotations_subset(val_images,
+                                              image_dir,
+                                                  output_path +'_val',
+                                                  num_shards,
+                                                  object_annotations_file,
+                                                  caption_annotations_file,
+                                                  include_masks)
+
+    train_images = images[nb_val_samples:]
+    _create_tf_record_from_coco_annotations_subset(train_images,
+                                              image_dir,
+                                                  output_path +'_train',
+                                                  num_shards,
+                                                  object_annotations_file,
+                                                  caption_annotations_file,
+                                                  include_masks)
+  else:
+    _create_tf_record_from_coco_annotations_subset(train_images,
+                                                  image_dir,
+                                                  output_path,
+                                                  num_shards,
+                                                  object_annotations_file,
+                                                  caption_annotations_file,
+                                                  include_masks)
 
 def main(_):
   assert FLAGS.image_dir, '`image_dir` missing.'
@@ -389,7 +400,8 @@ def main(_):
                                           FLAGS.num_shards,
                                           FLAGS.object_annotations_file,
                                           FLAGS.caption_annotations_file,
-                                          FLAGS.include_masks)
+                                          FLAGS.include_masks,
+                                          FLAGS.split)
 
 
 if __name__ == '__main__':
